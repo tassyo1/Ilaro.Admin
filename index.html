@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Ilaro.admin by rgonek</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Ilaro.admin</h1>
+        <h2>Generic admin panel for ASP.NET MVC.</h2>
+        <a href="https://github.com/rgonek/Ilaro.Admin" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a id="ilaroadmin" class="anchor" href="#ilaroadmin" aria-hidden="true"><span class="octicon octicon-link"></span></a>Ilaro.Admin</h1>
+
+<p>Ilaro.Admin creates for you admin panel using only POCO classes.</p>
+
+<p><a href="http://admin.ilaro.net/">Demo</a> - using Northwind DB (with small modifications, removed multiple primary keys)</p>
+
+<p>Project was inspired by <a href="https://docs.djangoproject.com/en/dev/ref/contrib/admin/">Django admin site</a>.</p>
+
+<p>Please keep in mind this is still a alpha version.</p>
+
+<p>Get it from nuget:</p>
+
+<p>If you are using Unity install:</p>
+
+<pre><code>Install-Package Ilaro.Admin.Unity
+</code></pre>
+
+<p>Or if you using Ninject install:</p>
+
+<pre><code>Install-Package Ilaro.Admin.Ninject
+</code></pre>
+
+<p>Or you can just install:</p>
+
+<pre><code>Install-Package Ilaro.Admin
+</code></pre>
+
+<p>And register by yourself all needed stuff.</p>
+
+<h2>
+<a id="todo" class="anchor" href="#todo" aria-hidden="true"><span class="octicon octicon-link"></span></a>TODO</h2>
+
+<p>I don't plan milestones, so I will do things in random order. 
+Maybe some of them I skip, and I probably I will back to them after release v1.</p>
+
+<p>I moved <a href="https://github.com/rgonek/Ilaro.Admin/wiki/TODO">TODO</a> to wiki pages, because here, it did a mess in commits, and I rather would simple list than a issues pages.</p>
+
+<h2>
+<a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requirements:</h2>
+
+<ul>
+<li>POCO classes (or pseudo POCO)</li>
+<li>ASP MVC 4</li>
+</ul>
+
+<h2>
+<a id="initialisation" class="anchor" href="#initialisation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initialisation:</h2>
+
+<p>In global.asax you must do three things:</p>
+
+<ol>
+<li>
+<p>Register routes</p>
+
+<div class="highlight highlight-C#"><pre><span class="pl-c">// prefix is optional, by default = IlaroAdmin</span>
+AdminInitialise.RegisterRoutes(RouteTable.Routes, prefix: <span class="pl-s"><span class="pl-pds">"</span>Admin<span class="pl-pds">"</span></span>);
+AdminInitialise.RegisterResourceRoutes(RouteTable.Routes);</pre></div>
+
+<p>It should be before register default routes because you lose a friendly urls</p>
+</li>
+<li>
+<p>Add entities</p>
+
+<div class="highlight highlight-C#"><pre>AdminInitialise.AddEntity&lt;Customer&gt;();
+AdminInitialise.AddEntity&lt;Product&gt;();</pre></div>
+
+<p>AddEntity method create a EntityViewModel object with all info from attributes.
+In future I want add here a fluent configuration of entity so, there is no need to configure entity with attributes.</p>
+</li>
+<li>
+<p>Specify access to Ilaro.Admin</p>
+
+<div class="highlight highlight-C#"><pre>AdminInitialise.Authorize = <span class="pl-k">new</span> System.Web.Mvc.AuthorizeAttribute { Roles = <span class="pl-s"><span class="pl-pds">"</span>Admin<span class="pl-pds">"</span></span> };</pre></div>
+
+<p>If you don't do that everyone with proper link have access to Ilaro.Admin.</p>
+</li>
+<li>
+<p>Initialise Ilaro.Admin</p>
+
+<div class="highlight highlight-C#"><pre>AdminInitialise.Initialise(<span class="pl-s"><span class="pl-pds">"</span>NorthwindEntities<span class="pl-pds">"</span></span>);</pre></div>
+
+<p>This line initialise UnityContainer, and bind foreign entity and try set primary key for each entity who has not defeined it. If you have only one ConnectionString there is no need to specify it.</p>
+</li>
+<li>Go to wiki pages for more info. <a href="https://github.com/rgonek/Ilaro.Admin/wiki/Entity-configuration">Entity configuration</a> <a href="https://github.com/rgonek/Ilaro.Admin/wiki/Property-configuration">Property configuration</a>
+</li>
+</ol>
+
+<p>And after that when you go to ~/IlaroAdmin url (if you don't define a other prefix) and you should view something like that:</p>
+
+<h4>
+<a id="dashboard" class="anchor" href="#dashboard" aria-hidden="true"><span class="octicon octicon-link"></span></a>Dashboard</h4>
+
+<p><img src="https://dl.dropboxusercontent.com/u/3659823/IlaroAdmin/dashboard.png" alt="Ilaro.Admin dashboard"></p>
+
+<h4>
+<a id="records-list" class="anchor" href="#records-list" aria-hidden="true"><span class="octicon octicon-link"></span></a>Records list</h4>
+
+<p><img src="https://dl.dropboxusercontent.com/u/3659823/IlaroAdmin/entity_details.png" alt="Ilaro.Admin records list"></p>
+
+<h4>
+<a id="create-new-record" class="anchor" href="#create-new-record" aria-hidden="true"><span class="octicon octicon-link"></span></a>Create new record</h4>
+
+<p><img src="https://dl.dropboxusercontent.com/u/3659823/IlaroAdmin/create_new_record.png" alt="Ilaro.Admin create new record"></p>
+
+<h2>
+<a id="what-i-use" class="anchor" href="#what-i-use" aria-hidden="true"><span class="octicon octicon-link"></span></a>What I use</h2>
+
+<p>Here I will try write all libraries, and part of code I use in project.</p>
+
+<ul>
+<li>
+<a href="https://github.com/robconery/massive"><strong>Massive</strong></a> - for db access. I Removed lots methods I left only read methods, thanks that I have much better control on created commands, and in future I want to completely removed massive.</li>
+<li>
+<a href="http://imageresizing.net/"><strong>ImageResizer</strong></a> - for resizing image. There's no much need to use this library, you can easy get rid off it, but I like it :)</li>
+<li>
+<a href="http://razorgenerator.codeplex.com/"><strong>RazorGenerator</strong></a> and <a href="http://visualstudiogallery.msdn.microsoft.com/1f6ec6ff-e89b-4c47-8e79-d2d68df894ec">extension</a> - for generating source code from views, thanks that you don't have add views into your project, just simply add dll. Of cource if you want you can add views files which overrides compiled views</li>
+<li><a href="http://getbootstrap.com/"><strong>Twitter bootstrap</strong></a></li>
+<li>
+<a href="http://harvesthq.github.io/chosen/"><strong>Chosen</strong></a> and bootstrap style for it <a href="https://gist.github.com/koenpunt/6424137">https://gist.github.com/koenpunt/6424137</a>
+</li>
+<li>
+<a href="https://github.com/Eonasdan/bootstrap-datetimepicker"><strong>Bootstrap-DateTimePicker</strong></a> - for DateTime picker, Date picker and Time picker</li>
+<li>
+<a href="https://github.com/scyv/bootstrap-spinedit"><strong>Bootstrap-SpinEdit</strong></a> - for numeric editor</li>
+<li>
+<a href="http://toopay.github.io/bootstrap-markdown/"><strong>Bootstrap-Markdown</strong></a> - for markdown editor</li>
+<li>
+<a href="https://github.com/chjj/marked"><strong>Marked</strong></a> - for parsing markdown</li>
+<li>
+<a href="https://github.com/HackerWins/summernote"><strong>Summernote</strong></a> - for html wysiwyg editor</li>
+<li>
+<a href="http://www.virtuosoft.eu/code/bootstrap-duallistbox/"><strong>Bootstrap Dual Listbox</strong></a> - for one to many editor</li>
+<li>
+<a href="https://github.com/grevory/bootstrap-file-input"><strong>Bootstrap-file-input</strong></a> - file input</li>
+</ul>
+
+<h2>
+<a id="knowing-issue" class="anchor" href="#knowing-issue" aria-hidden="true"><span class="octicon octicon-link"></span></a>Knowing issue</h2>
+
+<ul>
+<li>
+<p>Validation - for validate entity I using data annotations attributes (it probably works with custom ValidationAttribute), and client side validation look nice, but problem starts with server side validation.</p>
+
+<div class="highlight highlight-C#"><pre>[Required]
+[StringLength(<span class="pl-c1">20</span>)]
+[Compare(<span class="pl-s"><span class="pl-pds">"</span>Other property<span class="pl-pds">"</span></span>)]
+<span class="pl-k">public</span> <span class="pl-k">string</span> ProductName { <span class="pl-k">get</span>; <span class="pl-k">set</span>; }</pre></div>
+
+<p>In this example Required and StringLength works well but there is problem with Compare (in client side works well).</p>
+</li>
+</ul>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/rgonek/Ilaro.Admin/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/rgonek/Ilaro.Admin/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/rgonek/Ilaro.Admin"></a> is maintained by <a href="https://github.com/rgonek">rgonek</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>

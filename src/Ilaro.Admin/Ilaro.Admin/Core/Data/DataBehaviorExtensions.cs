@@ -5,19 +5,15 @@ namespace Ilaro.Admin.Core.Data
 {
     public static class DataBehaviorExtensions
     {
-        public static IEnumerable<Property> WhereIsNotSkipped(this IEnumerable<Property> properties)
+        public static IEnumerable<PropertyValue> WhereIsNotSkipped(
+            this IEnumerable<PropertyValue> propertiesValues)
         {
-            return properties.Where(x => x.Value.Raw.IsBehavior(DataBehavior.Skip) == false);
+            return propertiesValues.Where(value => value.DataBehavior != DataBehavior.Skip);
         }
 
-        public static bool IsBehavior(this object val, DataBehavior behavior)
+        public static bool IsBehavior(this object val, ValueBehavior behavior)
         {
-            return val is DataBehavior && (DataBehavior)val == behavior;
-        }
-
-        public static bool IsBehavior(this object val, DefaultValueBehavior behavior)
-        {
-            return val is DefaultValueBehavior && (DefaultValueBehavior)val == behavior;
+            return val is ValueBehavior && (ValueBehavior)val == behavior;
         }
     }
 }

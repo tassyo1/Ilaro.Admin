@@ -6,20 +6,21 @@ namespace Ilaro.Admin.Core.Data
 {
     public class RecordsComparer : IComparingRecords
     {
-        public void SkipNotChangedProperties(Entity entity, IDictionary<string, object> existingRecord)
+        public void SkipNotChangedProperties(
+            EntityRecord entityRecord, 
+            IDictionary<string, object> existingRecord)
         {
-            foreach (var property in entity
-                .CreateProperties(getForeignCollection: false)
-                .Where(x => x.IsKey == false)
-                .WhereIsNotSkipped())
+            foreach (var property in entityRecord.Values
+                .WhereIsNotSkipped()
+                .Where(value => value.Property.IsKey == false))
             {
-                if (existingRecord.ContainsKey(property.ColumnName.Undecorate()))
+                if (existingRecord.ContainsKey(property.Property.Column.Undecorate()))
                 {
-                    var oldValue = existingRecord[property.ColumnName.Undecorate()];
-                    var equals = Equals(property.Value.Raw, oldValue);
+                    var oldValue = existingRecord[property.Property.Column.Undecorate()];
+                    var equals = Equals(property.Raw, oldValue);
 
                     if (equals)
-                        property.Value.Raw = DataBehavior.Skip;
+                        property.DataBehavior = DataBehavior.Skip;
                 }
             }
         }

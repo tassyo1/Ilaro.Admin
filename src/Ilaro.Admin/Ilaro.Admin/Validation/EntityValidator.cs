@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using Ilaro.Admin.Core;
+using Ilaro.Admin.Extensions;
 
 namespace Ilaro.Admin.Validation
 {
@@ -13,37 +14,39 @@ namespace Ilaro.Admin.Validation
         public EntityValidator(Notificator notificator, IValidatingFiles fileValidator)
         {
             if (notificator == null)
-                throw new ArgumentNullException("notificator");
+                throw new ArgumentNullException(nameof(notificator));
             if (fileValidator == null)
-                throw new ArgumentNullException("fileValidator");
+                throw new ArgumentNullException(nameof(fileValidator));
 
             _notificator = notificator;
             _fileValidator = fileValidator;
         }
 
-        public bool Validate(Entity entity)
+        public bool Validate(EntityRecord entityRecord)
         {
-            var instance = entity.CreateIntance();
+            var instance = entityRecord.CreateInstance();
             var context = new ValidationContext(instance);
             var isValid = true;
-            foreach (var property in entity.Properties)
+            foreach (var propertyValue in entityRecord.Values)
             {
-                if (property.TypeInfo.IsFile)
+                if (propertyValue.Property.TypeInfo.IsFile)
                 {
-                    var result = _fileValidator.Validate(property);
+                    var result = _fileValidator.Validate(propertyValue);
                     if (result == false)
                         isValid = false;
                 }
-                foreach (var validator in property.ValidationAttributes)
+
+                context.DisplayName = propertyValue.Property.Display;
+                foreach (var validator in propertyValue.Property.Validators)
                 {
                     try
                     {
-                        validator.Validate(property.Value.Raw, context);
+                        validator.Validate(propertyValue.Raw, context);
                     }
                     catch (ValidationException ex)
                     {
                         isValid = false;
-                        _notificator.AddModelError(property.Name, ex.Message);
+                        _notificator.AddModelError(propertyValue.Property.Name, ex.Message);
                     }
                     catch (Exception ex)
                     {

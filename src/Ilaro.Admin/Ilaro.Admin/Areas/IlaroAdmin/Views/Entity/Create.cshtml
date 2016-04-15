@@ -1,4 +1,4 @@
-﻿@model EntityCreateOrEditModel
+﻿@model EntityCreateModel
 
 @{
     if (ViewBag.IsAjaxRequest)
@@ -28,40 +28,7 @@
     @Html.AntiForgeryToken()
     @Html.ValidationSummary(true)
 
-    if (Model.PropertiesGroups.Count > 1)
-    {
-        foreach (var group in Model.PropertiesGroups)
-        {
-            <fieldset>
-                <legend>@group.GroupName <button type="button" class="btn pull-right"><i class="@Html.Condition(group.IsCollapsed, () => "glyphicon glyphicon-plus", () => "glyphicon glyphicon-minus")"></i></button></legend>
-                <div class="fields @Html.Condition(group.IsCollapsed, () => "hide")">
-                    @foreach (var property in group.Properties)
-                    {
-                        <div class="form-group">
-                            @Html.EditorFor(m => property, property.Template.Editor)
-                            @if (property.IsForeignKey)
-                            {
-                                <a href="@Url.Action("Create", new { entityName = property.ForeignEntity.Name })" target="_blank" class="btn btn-primary create-foreign"><span class="glyphicon glyphicon-plus"></span></a>
-                            }
-                        </div>
-                    }
-                </div>
-            </fieldset>
-        }
-    }
-    else if (Model.PropertiesGroups.Count == 1)
-    {
-        foreach (var property in Model.PropertiesGroups[0].Properties)
-        {
-            <div class="form-group">
-                @Html.EditorFor(m => property, property.Template.Editor)
-                @if (property.IsForeignKey)
-                {
-                    <a href="@Url.Action("Create", new { entityName = property.ForeignEntity.Name })" target="_blank" class="btn btn-primary create-foreign"><span class="glyphicon glyphicon-plus"></span></a>
-                }
-            </div>
-        }
-    }
+    Html.RenderPartial("_PropertiesGroups", Model.PropertiesGroups);
 
     @Html.Hidden("EntityName", Model.Entity.Name)
 

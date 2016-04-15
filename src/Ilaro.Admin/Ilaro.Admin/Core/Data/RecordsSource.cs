@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Ilaro.Admin.Extensions;
@@ -14,28 +15,32 @@ namespace Ilaro.Admin.Core.Data
     {
         private static readonly IInternalLogger _log = LoggerProvider.LoggerFor(typeof(RecordsSource));
         private readonly Notificator _notificator;
+        private readonly IIlaroAdmin _admin;
 
-        public RecordsSource(Notificator notificator)
+        public RecordsSource(IIlaroAdmin admin, Notificator notificator)
         {
+            if (admin == null)
+                throw new ArgumentNullException(nameof(admin));
             if (notificator == null)
-                throw new ArgumentNullException("notificator");
+                throw new ArgumentNullException(nameof(notificator));
 
+            _admin = admin;
             _notificator = notificator;
         }
 
-        public Entity GetEntityWithData(Entity entity, string key)
+        public EntityRecord GetEntityRecord(Entity entity, string key)
         {
             var keys = key.Split(Const.KeyColSeparator).Select(x => x.Trim()).ToArray();
 
-            return GetEntityWithData(entity, keys);
+            return GetEntityRecord(entity, keys);
         }
 
-        public Entity GetEntityWithData(Entity entity, params string[] key)
+        public EntityRecord GetEntityRecord(Entity entity, params string[] key)
         {
             var keys = new object[key.Length];
             for (int i = 0; i < key.Length; i++)
             {
-                keys[i] = entity.Key[i].Value.ToObject(key[i]);
+                keys[i] = new PropertyValue(entity.Key[i]).ToObject(key[i]);
             }
             var item = GetRecord(entity, keys);
             if (item == null)
@@ -44,17 +49,10 @@ namespace Ilaro.Admin.Core.Data
                 return null;
             }
 
-            var propertiesDict = item as IDictionary<string, object>;
+            var entityRecord = new EntityRecord(entity);
+            entityRecord.Fill(item);
 
-            foreach (var property in entity.CreateProperties(false))
-            {
-                property.Value.Raw =
-                    propertiesDict.ContainsKey(property.ColumnName.Undecorate()) ?
-                    propertiesDict[property.ColumnName.Undecorate()] :
-                    null;
-            }
-
-            return entity;
+            return entityRecord;
         }
 
         public IDictionary<string, object> GetRecord(Entity entity, string key)
@@ -70,8 +68,8 @@ namespace Ilaro.Admin.Core.Data
         public IDictionary<string, object> GetRecord(Entity entity, params object[] key)
         {
             var table = new DynamicModel(
-                Admin.ConnectionStringName,
-                tableName: entity.TableName,
+                _admin.ConnectionStringName,
+                tableName: entity.Table,
                 primaryKeyField: entity.JoinedKey);
 
             var result = table.Single(key);
@@ -94,7 +92,7 @@ namespace Ilaro.Admin.Core.Data
                 Query = searchQuery,
                 Properties = entity.SearchProperties
             };
-            order = order.IsNullOrEmpty() ? entity.Key.FirstOrDefault().ColumnName : order;
+            order = order.IsNullOrEmpty() ? entity.Key.FirstOrDefault().Column : order;
             orderDirection = orderDirection.IsNullOrEmpty() ?
                 "ASC" :
                 orderDirection.ToUpper();
@@ -104,14 +102,14 @@ namespace Ilaro.Admin.Core.Data
                     .Where(x =>
                         !x.IsForeignKey ||
                         (!x.TypeInfo.IsCollection && x.IsForeignKey))
-                    .Select(x => x.ColumnName)
+                    .Select(x => x.Column)
                     .Distinct());
             List<object> args;
             var where = ConvertFiltersToSql(filters, search, out args);
 
             var table = new DynamicModel(
-                Admin.ConnectionStringName,
-                entity.TableName,
+                _admin.ConnectionStringName,
+                entity.Table,
                 entity.JoinedKey);
 
             if (page.HasValue && take.HasValue)
@@ -153,7 +151,7 @@ namespace Ilaro.Admin.Core.Data
                 {
                     foreach (var row in data)
                     {
-                        row.DisplayName = entity.ToString(row);
+                        row.DisplayName = row.ToString(entity);
                     }
                 }
 
@@ -164,7 +162,7 @@ namespace Ilaro.Admin.Core.Data
             }
         }
 
-        private static string ConvertFiltersToSql(
+        private string ConvertFiltersToSql(
             IList<BaseFilter> filters,
             EntitySearch search,
             out List<object> args,
@@ -207,11 +205,10 @@ namespace Ilaro.Admin.Core.Data
                     if (property.TypeInfo.IsString)
                     {
                         searchCondition += " {0}{1} LIKE @{2} OR"
-                            .Fill(alias, property.ColumnName, args.Count);
+                            .Fill(alias, property.Column, args.Count);
                         args.Add("%" + search.Query + "%");
                     }
-                    // TODO: Temporary solution
-                    else if (decimal.TryParse(query.Replace(".", ","), out temp))
+                    else if (decimal.TryParse(query.Replace(",", "."), NumberStyles.Any, CultureInfo.CurrentCulture, out temp))
                     {
                         var sign = "=";
                         if (search.Query.StartsWith(">"))
@@ -224,7 +221,7 @@ namespace Ilaro.Admin.Core.Data
                         }
 
                         searchCondition += " {0}{1} {2} @{3} OR"
-                            .Fill(alias, property.ColumnName, sign, args.Count);
+                            .Fill(alias, property.Column, sign, args.Count);
                         args.Add(temp);
                     }
                 }

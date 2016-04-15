@@ -1,4 +1,5 @@
-﻿using Ilaro.Admin.Core;
+﻿using Ilaro.Admin.Configuration;
+using Ilaro.Admin.Core;
 using Ilaro.Admin.Core.Data;
 using Ilaro.Admin.Tests.TestModels.Northwind;
 using Xunit;
@@ -11,10 +12,9 @@ namespace Ilaro.Admin.Tests.Core.Data
 
         public RecordsSource_GetEntityWithData()
         {
-            _source = new RecordsSource(new Notificator());
-            Admin.AddEntity<Product>();
-            Admin.SetForeignKeysReferences();
-            Admin.ConnectionStringName = ConnectionStringName;
+            _source = new RecordsSource(_admin, new Notificator());
+            Entity<Product>.Register().ReadAttributes();
+            _admin.Initialise(ConnectionStringName);
         }
 
         [Fact]
@@ -23,18 +23,18 @@ namespace Ilaro.Admin.Tests.Core.Data
             DB.Products.Insert(ProductName: "Product");
             var productId = DB.Products.Insert(ProductName: "Product2").ProductID;
 
-            var enetity = Admin.GetEntity("Product");
-            enetity = _source.GetEntityWithData(enetity, productId.ToString()) as Entity;
+            var enetity = _admin.GetEntity("Product");
+            EntityRecord entityRecord = _source.GetEntityRecord(enetity, productId.ToString());
             Assert.NotNull(enetity);
-            Assert.Equal("Product2", enetity["ProductName"].Value.AsString);
+            Assert.Equal("Product2", entityRecord["ProductName"].AsString);
         }
 
         [Fact]
         public void get_entity_with_data_with_incorrect_key_value_return_null_object()
         {
-            var enetity = Admin.GetEntity("Product");
-            enetity = _source.GetEntityWithData(enetity, "0");
-            Assert.Null(enetity);
+            var enetity = _admin.GetEntity("Product");
+            var entityRecord = _source.GetEntityRecord(enetity, "0");
+            Assert.Null(entityRecord);
         }
     }
 }

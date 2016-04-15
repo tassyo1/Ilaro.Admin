@@ -1,4 +1,4 @@
-﻿@model EntityCreateOrEditModel
+﻿@model EntityEditModel
 
 @{
     Layout = "~/Areas/IlaroAdmin/Views/Shared/_Layout.cshtml";
@@ -22,51 +22,17 @@
     @Html.AntiForgeryToken()
     @Html.ValidationSummary(true)
 
-
-    foreach (var key in Model.Entity.Key)
+    foreach (var key in Model.Record.Key)
     {
         <div class="form-group">
-            <label class="control-label col-md-2">@key.DisplayName</label>
+            <label class="control-label col-md-2">@key.Property.Display</label>
             <div class="col-md-6 control-value">
-                @key.Value.AsString
+                @key.AsString
             </div>
         </div>
     }
 
-    if (Model.PropertiesGroups.Count > 1)
-    {
-        foreach (var group in Model.PropertiesGroups)
-        {
-            <fieldset>
-                <legend>@group.GroupName <button type="button" class="btn pull-right"><i class="@Html.Condition(group.IsCollapsed, () => "glyphicon glyphicon-plus", () => "glyphicon glyphicon-minus")"></i></button></legend>
-                <div class="fields @Html.Condition(group.IsCollapsed, () => "hide")">
-                    @foreach (var property in group.Properties.Where(x => x.IsKey == false))
-                    {
-                        <div class="form-group">
-                            @Html.EditorFor(m => property, property.Template.Editor)
-                            @if (property.IsForeignKey)
-                            {
-                                <a href="@Url.Action("Create", new { entityName = property.ForeignEntity.Name })" target="_blank" class="btn btn-primary create-foreign"><span class="glyphicon glyphicon-plus"></span></a>
-                            }
-                        </div>
-                    }
-                </div>
-            </fieldset>
-        }
-    }
-    else if (Model.PropertiesGroups.Count == 1)
-    {
-        foreach (var property in Model.PropertiesGroups[0].Properties.Where(x => x.IsKey == false))
-        {
-            <div class="form-group">
-                @Html.EditorFor(m => property, property.Template.Editor)
-                @if (property.IsForeignKey)
-                {
-                    <a href="@Url.Action("Create", new { entityName = property.ForeignEntity.Name })" target="_blank" class="btn btn-primary create-foreign"><span class="glyphicon glyphicon-plus"></span></a>
-                }
-            </div>
-        }
-    }
+    Html.RenderPartial("_PropertiesGroups", Model.PropertiesGroups);
 
     @Html.Hidden("EntityName", Model.Entity.Name)
 
@@ -75,8 +41,8 @@
             <button type="submit" class="btn btn-primary">@IlaroAdminResources.Save</button>
             <button type="submit" class="btn btn-default" name="ContinueEdit"><i class="glyphicon glyphicon-edit"></i> @IlaroAdminResources.SaveAndContinueEdit</button>
             <button type="submit" class="btn btn-default" name="AddNext"><i class="glyphicon glyphicon-plus"></i> @IlaroAdminResources.SaveAndAddNext</button>
-            <a href="@Url.Action("Index", "Entities", new { area = "IlaroAdmin", entityName = Model.Entity.Name })" class="btn btn-link">@IlaroAdminResources.Cancel</a>
-            <a href="@Url.Action("Delete", new { entityName = Model.Entity.Name, key = Model.Entity.JoinedKeyValue })" class="btn btn-danger pull-right">@IlaroAdminResources.Delete</a>
+            <a href="@Url.Action("Index", "Entities", new { area = "IlaroAdmin", entityName = Model.Entity.Name })" class="btn b class="btn btn-link">@IlaroAdminResources.Cancel</a>
+            <a href="@Url.Action("Delete", new { entityName = Model.Entity.Name, key = Model.Record.JoinedKeyValue })" class="btn btn-danger pul class="btn btn-danger pull-right">@IlaroAdminResources.Delete</a>
         </div>
     </div>
 }

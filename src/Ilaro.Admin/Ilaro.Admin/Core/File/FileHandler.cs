@@ -27,15 +27,15 @@ namespace Ilaro.Admin.Core.File
             IConfiguration configuration)
         {
             if (saver == null)
-                throw new ArgumentNullException("saver");
+                throw new ArgumentNullException(nameof(saver));
             if (deleter == null)
-                throw new ArgumentNullException("deleter");
+                throw new ArgumentNullException(nameof(deleter));
             if (resizer == null)
-                throw new ArgumentNullException("resizer");
+                throw new ArgumentNullException(nameof(resizer));
             if (fileNameCreator == null)
-                throw new ArgumentNullException("fileNameCreator");
+                throw new ArgumentNullException(nameof(fileNameCreator));
             if (configuration == null)
-                throw new ArgumentNullException("configuration");
+                throw new ArgumentNullException(nameof(configuration));
 
             _saver = saver;
             _deleter = deleter;
@@ -44,47 +44,45 @@ namespace Ilaro.Admin.Core.File
             _configuration = configuration;
         }
 
-        /// <summary>
-        /// Upload files to temp location, or save file byte array to property value
-        /// </summary>
-        public IList<Property> Upload(Entity entity)
+        public IEnumerable<PropertyValue> Upload(
+            EntityRecord entityRecord,
+            Func<Property, object> defaultValueResolver)
         {
-            var proccessedProperties = new List<Property>();
-            foreach (var property in entity
-                .CreateProperties(getForeignCollection: false)
-                .Where(x => x.TypeInfo.IsFile))
+            var proccessedProperties = new List<PropertyValue>();
+            foreach (var propertyValue in entityRecord.Values
+                .Where(value => value.Property.TypeInfo.IsFile))
             {
-                if (property.Value.Raw.IsBehavior(DataBehavior.Clear))
+                if (propertyValue.DataBehavior == DataBehavior.Clear)
                 {
-                    property.Value.Raw = property.Value.DefaultValue;
-                    proccessedProperties.Add(property);
+                    propertyValue.Raw = defaultValueResolver(propertyValue.Property);
+                    proccessedProperties.Add(propertyValue);
                     continue;
                 }
-                var file = (HttpPostedFileWrapper)property.Value.Raw;
+                var file = (HttpPostedFileWrapper)propertyValue.Raw;
                 if (file == null || file.ContentLength == 0)
                 {
-                    property.Value.Raw = DataBehavior.Skip;
+                    propertyValue.DataBehavior = DataBehavior.Skip;
                     continue;
                 }
 
-                if (property.TypeInfo.IsFileStoredInDb)
+                if (propertyValue.Property.TypeInfo.IsFileStoredInDb)
                 {
-                    var setting = property.FileOptions.Settings.FirstOrDefault();
-                    var fileInputStream = property.TypeInfo.IsImage ?
+                    var setting = propertyValue.Property.FileOptions.Settings.FirstOrDefault();
+                    var fileInputStream = propertyValue.Property.TypeInfo.IsImage ?
                         _resizer.Resize(file.InputStream, setting.Width, setting.Height) :
                         file.InputStream;
 
                     var bytes = _saver.GetFileByteArray(fileInputStream);
-                    property.Value.Raw = bytes;
+                    propertyValue.Raw = bytes;
                 }
                 else
                 {
-                    var fileName = _fileNameCreator.GetFileName(property, file);
-                    property.Value.Raw = fileName;
+                    var fileName = _fileNameCreator.GetFileName(propertyValue.Property, file);
+                    propertyValue.Raw = fileName;
 
-                    if (property.TypeInfo.IsImage)
+                    if (propertyValue.Property.TypeInfo.IsImage)
                     {
-                        foreach (var setting in property.FileOptions.Settings)
+                        foreach (var setting in propertyValue.Property.FileOptions.Settings)
                         {
                             var resizedStream = _resizer.Resize(
                                 file.InputStream,
@@ -94,7 +92,11 @@ namespace Ilaro.Admin.Core.File
                             var subPath =
                                 setting.SubPath.TrimEnd('/', '\\') +
                                 _configuration.UploadFilesTempFolderSufix;
-                            var path = Path.Combine(BasePath, property.FileOptions.Path, subPath, fileName);
+                            var path = Path.Combine(
+                                BasePath,
+                                propertyValue.Property.FileOptions.Path,
+                                subPath,
+                                fileName);
 
                             _saver.SaveFile(resizedStream, path);
                             resizedStream.Dispose();
@@ -103,14 +105,14 @@ namespace Ilaro.Admin.Core.File
                     else
                     {
                         var subPath =
-                            property.FileOptions.Path.TrimEnd('/', '\\') +
+                            propertyValue.Property.FileOptions.Path.TrimEnd('/', '\\') +
                             _configuration.UploadFilesTempFolderSufix;
                         var path = Path.Combine(BasePath, subPath, fileName);
 
                         _saver.SaveFile(file.InputStream, path);
                     }
 
-                    proccessedProperties.Add(property);
+                    proccessedProperties.Add(propertyValue);
                 }
 
                 file.InputStream.Dispose();
@@ -119,31 +121,30 @@ namespace Ilaro.Admin.Core.File
             return proccessedProperties;
         }
 
-        /// <summary>
-        /// Move uploaded files from temp location, and delete old files.
-        /// </summary>
-        public void ProcessUploaded(IEnumerable<Property> properties, IDictionary<string, object> existingRecord = null)
+        public void ProcessUploaded(
+            IEnumerable<PropertyValue> propertiesValues,
+            IDictionary<string, object> existingRecord = null)
         {
-            foreach (var property in properties)
+            foreach (var propertyValue in propertiesValues)
             {
-                var settings = property.FileOptions.Settings.ToList();
-                if (property.TypeInfo.IsImage == false)
+                var settings = propertyValue.Property.FileOptions.Settings.ToList();
+                if (propertyValue.Property.TypeInfo.IsImage == false)
                 {
                     settings = settings.Take(1).ToList();
                 }
 
                 foreach (var setting in settings)
                 {
-                    DeleteOldFile(property, setting, existingRecord);
+                    DeleteOldFile(propertyValue.Property, setting, existingRecord);
 
-                    var fileName = property.Value.AsString;
+                    var fileName = propertyValue.AsString;
                     if (fileName.IsNullOrEmpty() == false)
                     {
                         var subPath =
                             setting.SubPath.TrimEnd('/', '\\') +
                             _configuration.UploadFilesTempFolderSufix;
-                        var sourcePath = Path.Combine(BasePath, property.FileOptions.Path, subPath, fileName);
-                        var targetPath = Path.Combine(BasePath, property.FileOptions.Path, setting.SubPath, fileName);
+                        var sourcePath = Path.Combine(BasePath, propertyValue.Property.FileOptions.Path, subPath, fileName);
+                        var targetPath = Path.Combine(BasePath, propertyValue.Property.FileOptions.Path, setting.SubPath, fileName);
 
                         System.IO.File.Move(sourcePath, targetPath);
                     }
@@ -156,58 +157,52 @@ namespace Ilaro.Admin.Core.File
             ImageSettings setting,
             IDictionary<string, object> recordDict)
         {
-            if (recordDict.ContainsKey(property.ColumnName.Undecorate()))
+            if (recordDict.ContainsKey(property.Column.Undecorate()))
             {
-                var fileName = recordDict[property.ColumnName.Undecorate()].ToStringSafe();
+                var fileName = recordDict[property.Column.Undecorate()].ToStringSafe();
                 var path = Path.Combine(BasePath, property.FileOptions.Path, setting.SubPath, fileName);
 
                 _deleter.Delete(path);
             }
         }
 
-        /// <summary>
-        /// Delete files uploaded in current request.
-        /// </summary>
-        public void DeleteUploaded(IEnumerable<Property> properties)
+        public void DeleteUploaded(IEnumerable<PropertyValue> propertiesValues)
         {
-            foreach (var property in properties)
+            foreach (var propertyValue in propertiesValues)
             {
-                var settings = property.FileOptions.Settings.ToList();
-                if (property.TypeInfo.IsFile)
+                var settings = propertyValue.Property.FileOptions.Settings.ToList();
+                if (propertyValue.Property.TypeInfo.IsFile)
                 {
                     settings = settings.Take(1).ToList();
                 }
 
                 foreach (var setting in settings)
                 {
-                    var fileName = property.Value.AsString;
+                    var fileName = propertyValue.AsString;
                     var subPath =
                         setting.SubPath.TrimEnd('/', '\\') +
                         _configuration.UploadFilesTempFolderSufix;
-                    var path = Path.Combine(BasePath, property.FileOptions.Path, subPath, fileName);
+                    var path = Path.Combine(BasePath, propertyValue.Property.FileOptions.Path, subPath, fileName);
 
                     _deleter.Delete(path);
                 }
             }
         }
 
-        /// <summary>
-        /// Delete files uploaded in current request.
-        /// </summary>
-        public void Delete(IEnumerable<Property> properties)
+        public void Delete(IEnumerable<PropertyValue> propertiesValues)
         {
-            foreach (var property in properties)
+            foreach (var propertyValue in propertiesValues)
             {
-                var settings = property.FileOptions.Settings.ToList();
-                if (property.TypeInfo.IsFile)
+                var settings = propertyValue.Property.FileOptions.Settings.ToList();
+                if (propertyValue.Property.TypeInfo.IsFile)
                 {
                     settings = settings.Take(1).ToList();
                 }
 
                 foreach (var setting in settings)
                 {
-                    var fileName = property.Value.AsString;
-                    var path = Path.Combine(BasePath, property.FileOptions.Path, setting.SubPath, fileName);
+                    var fileName = propertyValue.AsString;
+                    var path = Path.Combine(BasePath, propertyValue.Property.FileOptions.Path, setting.SubPath, fileName);
 
                     _deleter.Delete(path);
                 }

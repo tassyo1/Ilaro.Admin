@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -10,35 +10,44 @@ namespace Ilaro.Admin.Extensions
     public static class CollectionExtensions
     {
         /// <summary>
-        /// Determines whether the collection is null or empty.
+        /// Determines whether the collection is null or contains no elements.
         /// </summary>
-        /// <param name="collection">The collection.</param>
+        /// <typeparam name="T">The IEnumerable type.</typeparam>
+        /// <param name="enumerable">The enumerable, which may be null or empty.</param>
         /// <returns>
-        ///   <c>true</c> if the collection is null or empty; otherwise, <c>false</c>.
+        ///     <c>true</c> if the IEnumerable is null or empty; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsNullOrEmpty(this ICollection collection)
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable)
         {
+            if (enumerable == null)
+            {
+                return true;
+            }
+            /* If this is a list, use the Count property. 
+             * The Count property is O(1) while IEnumerable.Count() is O(N). */
+            var collection = enumerable as ICollection<T>;
             if (collection != null)
             {
-                return (collection.Count == 0);
+                return collection.Count < 1;
             }
-            return true;
+            return !enumerable.Any();
         }
 
         /// <summary>
-        /// Determines whether the collection is null or empty.
+        /// Determines whether the collection is null or contains no elements.
         /// </summary>
-        /// <param name="collection">The collection.</param>
+        /// <typeparam name="T">The IEnumerable type.</typeparam>
+        /// <param name="collection">The collection, which may be null or empty.</param>
         /// <returns>
-        ///   <c>true</c> if the collection is null or empty; otherwise, <c>false</c>.
+        ///     <c>true</c> if the IEnumerable is null or empty; otherwise, <c>false</c>.
         /// </returns>
         public static bool IsNullOrEmpty<T>(this ICollection<T> collection)
         {
-            if (collection != null)
+            if (collection == null)
             {
-                return (collection.Count == 0);
+                return true;
             }
-            return true;
+            return collection.Count < 1;
         }
 
         public static IDictionary<string, object> Merge(
@@ -74,6 +83,20 @@ namespace Ilaro.Admin.Extensions
                 routeValueDictionary.Add(key, collection[key]);
             }
             return routeValueDictionary;
+        }
+
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(
+            this IEnumerable<TSource> source, 
+            Func<TSource, TKey> keySelector)
+        {
+            HashSet<TKey> knownKeys = new HashSet<TKey>();
+            foreach (TSource element in source)
+            {
+                if (knownKeys.Add(keySelector(element)))
+                {
+                    yield return element;
+                }
+            }
         }
     }
 }

@@ -1,9 +1,7 @@
-﻿@model Property
+﻿@model PropertyValue
 
-@{Html.ClearPrefix();}
-<label for="@Html.Id(Model.Name)" class="control-label col-md-2">@Model.DisplayName @Html.Condition(Model.IsRequired, () => "<span class=\"text-danger\">*</span>")</label>
-<div class="controls col-md-6">
-    @Html.DropDownList(Model.Name, Model.GetPossibleValues(false), Model, new { @class = "form-control dual-list", multiple = "true" })
-    @Html.Condition(!string.IsNullOrEmpty(Model.Description), () => "<span class=\"help-block\">" + Model.Description + "</span>")
+<div class="col-md-6">
+    @Html.DropDownList(Model.Property.Name, Model.GetPossibleValues(false), Model.Property, new { @class = "form-control dual-list", multiple = "true" })
+    @Html.Condition(!string.IsNullOrEmpty(Model.Property.Description), () => "<span class=\"help-block\">" + Model.Property.Description + "</span>")
 </div>
-@Html.ValidationMessage(Model.Name)
+@Html.ValidationMessage(Model.Property.Name)

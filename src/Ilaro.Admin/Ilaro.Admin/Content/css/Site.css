@@ -337,9 +337,24 @@ input[type="checkbox"].input-validation-error {
 }
 
 .list-delete {
-    background: #f2dede;
-    border-left: 5px solid #ebccd1;
     color: #a94442;
     padding: 10px;
     width: auto;
 }
+
+.list-delete-wrapper {
+    background: #f2dede;
+    border-left: 5px solid #ebccd1;
+    max-height: 400px;
+    overflow: auto;
+}
+
+#changes-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+    #changes-list li {
+        margin-top: 5px;
+    }

@@ -5,6 +5,7 @@ using Ilaro.Admin.Core;
 using Ilaro.Admin.Core.Data;
 using Ilaro.Admin.Tests.TestModels.Northwind;
 using Xunit;
+using Ilaro.Admin.Configuration;
 
 namespace Ilaro.Admin.Tests.Core.Data
 {
@@ -13,35 +14,31 @@ namespace Ilaro.Admin.Tests.Core.Data
         private readonly IFetchingRecords _source;
         private readonly IUpdatingRecords _updater;
         private readonly IProvidingUser _user;
-        private Entity _entity;
+        private EntityRecord _entityRecord;
         private int _productId;
 
         public RecordsUpdater_()
         {
-            _source = new RecordsSource(new Notificator());
+            _source = new RecordsSource(_admin, new Notificator());
             _user = A.Fake<IProvidingUser>();
-            A.CallTo(() => _user.Current()).Returns("Test");
-            var executor = new DbCommandExecutor(_user);
-            _updater = new RecordsUpdater(executor, _source);
-            Admin.AddEntity<Product>();
-            Admin.SetForeignKeysReferences();
-            Admin.ConnectionStringName = ConnectionStringName;
-
-            _productId = DB.Products.Insert(ProductName: "Product").ProductID;
-            _entity = _source.GetEntityWithData(Admin.GetEntity("Product"), _productId.ToString());
+            A.CallTo(() => _user.CurrentUserName()).Returns("Test");
+            var executor = new DbCommandExecutor(_admin, _user);
+            _updater = new RecordsUpdater(_admin, executor, _source, _user);
         }
 
         [Fact]
         public void updates_record_and_does_not_create_entity_change_when_is_not_added()
         {
-            _entity["ProductName"].Value.Raw = "Product2";
-            _updater.Update(_entity);
+            set_up_test();
+
+            _entityRecord["ProductName"].Raw = "Product2";
+            _updater.Update(_entityRecord);
 
             var products = (List<Product>)DB.Products.All();
             Assert.Equal(1, products.Count);
             Assert.Equal("Product2", products.First().ProductName);
 
-            A.CallTo(() => _user.Current()).MustNotHaveHappened();
+            A.CallTo(() => _user.CurrentUserName()).MustNotHaveHappened();
             var changes = DB.EntityChanges.All().ToList();
             Assert.Equal(0, changes.Count);
         }
@@ -49,15 +46,17 @@ namespace Ilaro.Admin.Tests.Core.Data
         [Fact]
         public void updates_record_and_does_create_entity_change_when_is_added()
         {
-            Admin.AddEntity<EntityChange>();
-            _entity["ProductName"].Value.Raw = "Product2";
-            _updater.Update(_entity);
+            _admin.RegisterEntity<EntityChange>();
+            set_up_test();
+
+            _entityRecord["ProductName"].Raw = "Product2";
+            _updater.Update(_entityRecord);
 
             var products = (List<Product>)DB.Products.All();
             Assert.Equal(1, products.Count);
             Assert.Equal("Product2", products.First().ProductName);
 
-            A.CallTo(() => _user.Current()).MustHaveHappened();
+            A.CallTo(() => _user.CurrentUserName()).MustHaveHappened();
             var changes = DB.EntityChanges.All().ToList();
             Assert.Equal(1, changes.Count);
         }
@@ -65,12 +64,13 @@ namespace Ilaro.Admin.Tests.Core.Data
         [Fact]
         public void updates_record_with_one_to_many_foreign_property()
         {
+            set_up_test();
             var categoryId = DB.Categories.Insert(CategoryName: "Category").CategoryID;
-            Admin.AddEntity<Category>();
-            _entity["ProductName"].Value.Raw = "Product";
-            _entity["Discontinued"].Value.Raw = false;
-            _entity["Category"].Value.Raw = categoryId;
-            _updater.Update(_entity);
+
+            _entityRecord["ProductName"].Raw = "Product2";
+            _entityRecord["Discontinued"].Raw = false;
+            _entityRecord["Category"].Raw = categoryId;
+            _updater.Update(_entityRecord);
 
             var products = (List<dynamic>)DB.Products.All().ToList();
             Assert.Equal(1, products.Count);
@@ -80,17 +80,17 @@ namespace Ilaro.Admin.Tests.Core.Data
         [Fact]
         public void updates_record_with_many_to_one_foreign_property()
         {
+            set_up_test();
             var category = DB.Categories.Insert(CategoryName: "Category");
             var product2 = DB.Products.Insert(ProductName: "Product2", CategoryId: category.CategoryID);
 
-            Admin.AddEntity<Category>();
-            Admin.SetForeignKeysReferences();
-            _entity =
-                Admin.EntitiesTypes.FirstOrDefault(x => x.Name == "Category");
-            _entity = _source.GetEntityWithData(Admin.GetEntity("Category"), category.CategoryID.ToString());
-            _entity["CategoryName"].Value.Raw = "Category";
-            _entity["Products"].Value.Values = new List<object> { _productId };
-            _updater.Update(_entity);
+            _entityRecord = _source.GetEntityRecord(
+                _admin.GetEntity<Category>(),
+                category.CategoryID.ToString());
+
+            _entityRecord["CategoryName"].Raw = "Category";
+            _entityRecord["Products"].Values = new List<object> { _productId };
+            _updater.Update(_entityRecord);
 
             var categories = (List<dynamic>)DB.Categories.All().ToList();
             Assert.Equal(1, categories.Count);
@@ -100,6 +100,18 @@ namespace Ilaro.Admin.Tests.Core.Data
             product2 = products.First(x => x.ProductID == product2.ProductID);
             Assert.Null(product2.CategoryID);
             Assert.Equal(category.CategoryID, product.CategoryID);
+        }
+
+        private void set_up_test()
+        {
+            Entity<Product>.Register().ReadAttributes();
+            Entity<Category>.Register().ReadAttributes();
+            _admin.Initialise(ConnectionStringName);
+
+            _productId = DB.Products.Insert(ProductName: "Product").ProductID;
+            _entityRecord = _source.GetEntityRecord(
+                _admin.GetEntity<Product>(), 
+                _productId.ToString());
         }
     }
 }

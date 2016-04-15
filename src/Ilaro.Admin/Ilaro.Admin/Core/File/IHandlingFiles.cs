@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Ilaro.Admin.Core.File
 {
@@ -7,21 +8,25 @@ namespace Ilaro.Admin.Core.File
         /// <summary>
         /// Upload files to temp location, or save file byte array to property value
         /// </summary>
-        IList<Property> Upload(Entity entity);
+        IEnumerable<PropertyValue> Upload(
+            EntityRecord entityRecord,
+            Func<Property, object> defaultValueResolver);
+
+        /// <summary>
+        /// Delete files for existing record.
+        /// </summary>
+        void Delete(IEnumerable<PropertyValue> propertiesValues);
+
+        /// <summary>
+        /// Delete files uploaded in current request.
+        /// </summary>
+        void DeleteUploaded(IEnumerable<PropertyValue> propertiesValues);
 
         /// <summary>
         /// Move uploaded files from temp location, and delete old files.
         /// </summary>
-        void Delete(IEnumerable<Property> properties);
-
-        /// <summary>
-        /// Delete files uploaded in current request.
-        /// </summary>
-        void DeleteUploaded(IEnumerable<Property> properties);
-
-        /// <summary>
-        /// Delete files uploaded in current request.
-        /// </summary>
-        void ProcessUploaded(IEnumerable<Property> properties, IDictionary<string, object> existingRecord = null);
+        void ProcessUploaded(
+            IEnumerable<PropertyValue> propertiesValues, 
+            IDictionary<string, object> existingRecord = null);
     }
 }

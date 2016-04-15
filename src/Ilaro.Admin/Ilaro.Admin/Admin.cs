@@ -1,156 +1,77 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
 using System.Web.Mvc;
-using System.Web.Optimization;
-using Ilaro.Admin.Core;
-using Ilaro.Admin.Extensions;
-using Ilaro.Admin.Infrastructure;
-using Ilaro.Admin.Models;
+using System.Globalization;
+using System.Reflection;
+using Ilaro.Admin.Registration;
+using Ilaro.Admin.Configuration.Customizers;
 
 namespace Ilaro.Admin
 {
     public static class Admin
     {
-        public static IList<Entity> EntitiesTypes { get; set; }
-
-        public static Entity ChangeEntity
+        public static IIlaroAdmin Current
         {
             get
             {
-                return EntitiesTypes.FirstOrDefault(x => x.IsChangeEntity);
+                return DependencyResolver.Current.GetService<IIlaroAdmin>();
             }
         }
 
-        public static bool IsChangesEnabled
+        public static EntityCustomizer<TEntity> RegisterEntity<TEntity>() where TEntity : class
         {
-            get { return ChangeEntity != null; }
+            return Current.RegisterEntity<TEntity>();
         }
 
-        public static IAuthorizationFilter Authorize { get; set; }
-
-        public static string ConnectionStringName { get; set; }
-
-        public static string RoutesPrefix { get; private set; }
-
-        static Admin()
+        public static void RegisterEntity(Type entityType)
         {
-            EntitiesTypes = new List<Entity>();
+            Current.RegisterEntity(entityType);
         }
 
-        public static Entity GetEntity(string entityName)
+        public static EntityCustomizer<TEntity> RegisterEntityWithAttributes<TEntity>() where TEntity : class
         {
-            return EntitiesTypes.FirstOrDefault(x => x.Name == entityName);
+            return Current.RegisterEntityWithAttributes<TEntity>();
         }
 
-        public static Entity AddEntity<TEntity>()
+        public static void RegisterEntityWithAttributes(Type entityType)
         {
-            var entity = new Entity(typeof(TEntity));
-            EntitiesTypes.Add(entity);
-
-            return entity;
+            Current.RegisterEntityWithAttributes(entityType);
         }
 
-        public static void Initialise(string connectionStringName = "", string routesPrefix = "IlaroAdmin")
+        public static IIlaroAdmin Initialise(
+            string connectionStringName = "",
+            string routesPrefix = "IlaroAdmin",
+            IAuthorizationFilter authorize = null,
+            CultureInfo culture = null)
         {
-            RoutesPrefix = routesPrefix;
-            if (string.IsNullOrEmpty(connectionStringName))
-            {
-                if (ConfigurationManager.ConnectionStrings.Count > 1)
-                {
-                    connectionStringName = ConfigurationManager.ConnectionStrings[1].Name;
-                }
-                else
-                {
-                    throw new InvalidOperationException("Need a connection string name - can't determine what it is");
-                }
-            }
-            ConnectionStringName = connectionStringName;
+            var admin = Current;
+            admin.Initialise(connectionStringName, routesPrefix, authorize);
 
-            ModelBinders.Binders.Add(typeof(TableInfo),
-                new TableInfoModelBinder(
-                    (IConfiguration)DependencyResolver.Current.GetService(typeof(IConfiguration))));
-
-            GlobalFilters.Filters.Add(new ClearEntitiesPropertiesAttribute());
-            GlobalFilters.Filters.Add(new CopyIsAjaxRequestFromRequestToViewBagAttribute());
-            GlobalFilters.Filters.Add(new ModelStateErrorsBulderAttribute());
-            GlobalFilters.Filters.Add(new NotificatorAttribute());
-            BundleConfig.RegisterBundles(BundleTable.Bundles);
-
-            SetForeignKeysReferences();
+            return admin;
         }
 
-        public static void SetForeignKeysReferences()
+        public static IRegisterTypes AssemblyEntities(params Assembly[] assemblies)
         {
-            foreach (var entity in EntitiesTypes)
-            {
-                // Try determine which property is a entity key if is not set
-                if (entity.Key.IsNullOrEmpty())
-                {
-                    var entityKey = entity.Properties.FirstOrDefault(x => x.Name.ToLower() == "id");
-                    if (entityKey == null)
-                    {
-                        entityKey = entity.Properties.FirstOrDefault(x => x.Name.ToLower() == entity.Name.ToLower() + "id");
-                        if (entityKey == null)
-                        {
-                            throw new Exception("Entity does not have a defined key");
-                        }
-                    }
+            return ScanningRegistrationExtensions.RegisterAssemblyTypes(assemblies);
+        }
 
-                    entityKey.IsKey = true;
-                    if (entity.LinkKey == null)
-                    {
-                        entityKey.IsLinkKey = true;
-                    }
-                }
-            }
+        public static IRegisterTypes Entities(params Type[] types)
+        {
+            return ScanningRegistrationExtensions.RegisterTypes(types);
+        }
 
-            foreach (var entity in EntitiesTypes)
-            {
-                foreach (var property in entity.Properties)
-                {
-                    if (property.IsForeignKey)
-                    {
-                        property.ForeignEntity = EntitiesTypes.FirstOrDefault(x => x.Name == property.ForeignEntityName);
+        public static IRegisterCustomizers AssemblyCustomizers(params Assembly[] assemblies)
+        {
+            return ScanningRegistrationExtensions.RegisterAssemblyCustomizators(assemblies);
+        }
 
-                        if (!property.ReferencePropertyName.IsNullOrEmpty())
-                        {
-                            property.ReferenceProperty = entity.Properties.FirstOrDefault(x => x.Name == property.ReferencePropertyName);
-                            if (property.ReferenceProperty != null)
-                            {
-                                property.ReferenceProperty.IsForeignKey = true;
-                                property.ReferenceProperty.ForeignEntity = property.ForeignEntity;
-                                property.ReferenceProperty.ReferenceProperty = property;
-                            }
-                            else if (!property.TypeInfo.IsSystemType)
-                            {
-                                if (property.ForeignEntity != null)
-                                {
-                                    property.TypeInfo.Type = property.ForeignEntity.Key.FirstOrDefault().TypeInfo.Type;
-                                }
-                                else
-                                {
-                                    // by default foreign property is int
-                                    property.TypeInfo.Type = typeof(int);
-                                }
-                            }
-                        }
-                    }
-                }
+        public static IRegisterCustomizers Customizers(params Type[] types)
+        {
+            return ScanningRegistrationExtensions.RegisterCustomizators(types);
+        }
 
-                foreach (var property in entity.Properties)
-                {
-                    property.Template = new PropertyTemplate(
-                        property.Attributes,
-                        property.TypeInfo,
-                        property.IsForeignKey);
-                }
-
-                entity.SetColumns();
-                entity.SetLinkKey();
-                entity.PrepareGroups();
-            }
+        internal static void AddCustomizer(ICustomizersHolder customizersHolder)
+        {
+            ((IlaroAdmin)Current).CustomizerHolders[customizersHolder.Type] = customizersHolder;
         }
     }
 }

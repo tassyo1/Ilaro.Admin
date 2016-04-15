@@ -40,7 +40,7 @@ namespace Ilaro.Admin.Unity
             container.RegisterType<IValidatingEntities, EntityValidator>();
             container.RegisterType<IValidatingFiles, FileValidator>();
             container.RegisterType<IConfigurationProvider, ConfigurationProvider>();
-            container.RegisterType<IConfiguration, Configuration>();
+            container.RegisterType<IConfiguration, Core.Configuration>();
             container.RegisterType<IFetchingRecords, RecordsSource>();
             container.RegisterType<IFetchingRecordsHierarchy, RecordsHierarchySource>();
             container.RegisterType<IExecutingDbCommand, DbCommandExecutor>();
@@ -56,6 +56,9 @@ namespace Ilaro.Admin.Unity
             container.RegisterType<IResizingImages, ImageResizer>();
             container.RegisterType<ISavingFiles, FileSaver>();
             container.RegisterType<IFilterFactory, FilterFactory>();
+            container.RegisterType<IRecordsService, RecordsService>();
+
+            container.RegisterType<IIlaroAdmin, IlaroAdmin>(new ContainerControlledLifetimeManager());
         }
     }
 }

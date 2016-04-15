@@ -21,6 +21,7 @@
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
     <WebGreaseLibPath>..\packages\WebGrease.1.5.2\lib</WebGreaseLibPath>
+    <UseGlobalApplicationHostFile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -135,7 +136,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>IlaroAdminResources.resx</DependentUpon>
     </Compile>
-    <Compile Include="App_Start\BundleConfig.cs" />
+    <Compile Include="App_Start\BundleInitialise.cs" />
+    <Compile Include="App_Start\GlobalFiltersInitialise.cs" />
+    <Compile Include="App_Start\ModelBindersInitialise.cs" />
     <Compile Include="App_Start\RazorGeneratorMvcStart.cs" />
     <Compile Include="Areas\IlaroAdmin\Controllers\AccountController.cs" />
     <Compile Include="Areas\IlaroAdmin\Controllers\EntitiesController.cs" />
@@ -144,10 +147,30 @@
     <Compile Include="Areas\IlaroAdmin\Controllers\ResourceController.cs" />
     <Compile Include="Areas\IlaroAdmin\Controllers\SharedController.cs" />
     <Compile Include="Areas\IlaroAdmin\IlaroAdminAreaRegistration.cs" />
-    <Compile Include="Areas\IlaroAdmin\Views\Entities\Changes1.generated.cs">
+    <Compile Include="Areas\IlaroAdmin\Views\Entities\Changes.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Changes.cshtml</DependentUpon>
+    </Compile>
+    <Compile Include="Areas\IlaroAdmin\Views\Entity\_PropertiesGroup.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>_PropertiesGroup.cshtml</DependentUpon>
+    </Compile>
+    <Compile Include="Areas\IlaroAdmin\Views\Entity\_PropertiesGroups.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>_PropertiesGroups.cshtml</DependentUpon>
+    </Compile>
+    <Compile Include="Areas\IlaroAdmin\Views\Entity\_PropertyEditor.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>_PropertyEditor.cshtml</DependentUpon>
+    </Compile>
+    <Compile Include="Areas\IlaroAdmin\Views\Group\_LastChanges.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>_LastChanges.cshtml</DependentUpon>
     </Compile>
     <Compile Include="Areas\IlaroAdmin\Views\Shared\DisplayTemplates\DbImagePartial.generated.cs">
       <DependentUpon>DbImagePartial.cshtml</DependentUpon>
@@ -159,35 +182,50 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
-    <Compile Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\_CustomNumber.generated.cs">
-      <DependentUpon>_CustomNumber.cshtml</DependentUpon>
+    <Compile Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\NumberPartial.generated.cs">
+      <DependentUpon>NumberPartial.cshtml</DependentUpon>
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
-    <Compile Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\_CustomString.generated.cs">
-      <DependentUpon>_CustomString.cshtml</DependentUpon>
+    <Compile Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\StringPartial.generated.cs">
+      <DependentUpon>StringPartial.cshtml</DependentUpon>
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
-    <Compile Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\_CustomDateTimeRange.generated.cs">
+    <Compile Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\DateTimePartial.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>_CustomDateTimeRange.cshtml</DependentUpon>
+      <DependentUpon>DateTimePartial.cshtml</DependentUpon>
     </Compile>
     <Compile Include="Areas\IlaroAdmin\Views\Shared\_Filter.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>_Filter.cshtml</DependentUpon>
     </Compile>
+    <Compile Include="Configuration\AttributesConfigurator.cs" />
+    <Compile Include="Configuration\Customizers\ClassCustomizerHolder.cs" />
+    <Compile Include="Configuration\Customizers\CustomizersHolder.cs" />
+    <Compile Include="Configuration\Customizers\IEntityCustomizer.cs" />
+    <Compile Include="Configuration\Customizers\IPropertyCustomizer.cs" />
+    <Compile Include="Configuration\Customizers\PropertyCustomizer.cs" />
+    <Compile Include="Configuration\Customizers\TemplateUtil.cs" />
+    <Compile Include="Configuration\Entity.cs" />
+    <Compile Include="Configuration\EntityConfiguration.cs" />
+    <Compile Include="Configuration\Customizers\EntityCustomizer.cs" />
+    <Compile Include="Configuration\Customizers\ICustomizersHolder.cs" />
+    <Compile Include="Configuration\Customizers\PropertyCustomizerHolder.cs" />
+    <Compile Include="Configuration\TypeExtensions.cs" />
     <Compile Include="Const.cs" />
     <Compile Include="Core\Configuration.cs" />
     <Compile Include="Core\ConfigurationProvider.cs" />
     <Compile Include="Core\Data\ChangesDescriber.cs" />
+    <Compile Include="Core\Data\RecordsService.cs" />
     <Compile Include="Core\Data\DataBehaviorExtensions.cs" />
     <Compile Include="Core\Data\DataBehavior.cs" />
     <Compile Include="Core\Data\DB.cs" />
     <Compile Include="Core\Data\DbCommandExecutor.cs" />
     <Compile Include="Core\Data\DefaultValueBehavior.cs" />
+    <Compile Include="Core\Data\IRecordsService.cs" />
     <Compile Include="Core\Data\IComparingRecords.cs" />
     <Compile Include="Core\Data\ICreatingRecords.cs" />
     <Compile Include="Core\Data\IDeletingRecords.cs" />
@@ -203,6 +241,11 @@
     <Compile Include="Core\Data\IExecutingDbCommand.cs" />
     <Compile Include="Core\Data\IFetchingRecords.cs" />
     <Compile Include="Core\Data\RecordsUpdater.cs" />
+    <Compile Include="Core\DeleteOptionsHierarchyBuilder.cs" />
+    <Compile Include="Core\EntityExtensions.cs" />
+    <Compile Include="Core\EntityRecord.cs" />
+    <Compile Include="Core\Extensions\PropertyExtensions.cs" />
+    <Compile Include="Core\Extensions\PropertyValuesExtensions.cs" />
     <Compile Include="Core\File\FileDeleter.cs" />
     <Compile Include="Core\File\FileHandler.cs" />
     <Compile Include="Core\File\FileNameCreator.cs" />
@@ -220,6 +263,7 @@
     <Compile Include="Core\ValueConverter.cs" />
     <Compile Include="DataAnnotations\AuthorizeWrapperAttribute.cs" />
     <Compile Include="DataAnnotations\ColumnsAttribute.cs" />
+    <Compile Include="DataAnnotations\DeletableAttribute.cs" />
     <Compile Include="DataAnnotations\GroupsAttribute.cs" />
     <Compile Include="DataAnnotations\FileAttribute.cs" />
     <Compile Include="Core\DataTypeConverter.cs" />
@@ -229,6 +273,12 @@
     <Compile Include="Core\PropertyTypeInfo.cs" />
     <Compile Include="Core\PropertyValue.cs" />
     <Compile Include="Core\Verbose.cs" />
+    <Compile Include="DataAnnotations\OnCreateAttribute.cs" />
+    <Compile Include="DataAnnotations\OnDeleteAttribute.cs" />
+    <Compile Include="DataAnnotations\OnUpdateAttribute.cs" />
+    <Compile Include="DataAnnotations\SoftDeleteAttribute.cs" />
+    <Compile Include="Extensions\AssemblyExtensions.cs" />
+    <Compile Include="Extensions\EntityExtensions.cs" />
     <Compile Include="Extensions\HtmlHelperCheckBoxExtensions.cs" />
     <Compile Include="Extensions\HtmlHelperDropDownListExtensions.cs" />
     <Compile Include="Extensions\HtmlHelperPasswordExtensions.cs" />
@@ -236,9 +286,8 @@
     <Compile Include="Extensions\HtmlHelperTextBoxExtensions.cs" />
     <Compile Include="DataAnnotations\FileOptions.cs" />
     <Compile Include="DataAnnotations\ImageSettingsAttribute.cs" />
-    <Compile Include="DataAnnotations\LinkKeyAttribute.cs" />
     <Compile Include="DataAnnotations\LinksAttribute.cs" />
-    <Compile Include="DataAnnotations\OnDeleteAttribute.cs" />
+    <Compile Include="DataAnnotations\CascadeAttribute.cs" />
     <Compile Include="DataAnnotations\RecordDisplayAttribute.cs" />
     <Compile Include="DataAnnotations\SearchAttribute.cs" />
     <Compile Include="DataAnnotations\TemplateAttribute.cs" />
@@ -248,6 +297,7 @@
     <Compile Include="DataAnnotations\NameCreation.cs" />
     <Compile Include="Core\IKnowTheTime.cs" />
     <Compile Include="Extensions\StreamExtensions.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Extensions\UrlHelperExtensions.cs" />
     <Compile Include="Filters\BaseFilter.cs" />
     <Compile Include="Filters\ChangeEntityFilter.cs" />
@@ -261,14 +311,16 @@
     <Compile Include="IlaroPrecompiledMvcEngine.cs" />
     <Compile Include="Core\NotificateType.cs" />
     <Compile Include="Core\Notificator.cs" />
-    <Compile Include="Infrastructure\ClearEntitiesPropertiesAttribute.cs" />
     <Compile Include="Infrastructure\CopyIsAjaxRequestFromRequestToViewBagAttribute.cs" />
     <Compile Include="Infrastructure\EmbeddedVirtualFile.cs" />
     <Compile Include="Infrastructure\EmbeddedVirtualPathProvider.cs" />
     <Compile Include="Infrastructure\IlaroAdminFilterAttribute.cs" />
-    <Compile Include="Infrastructure\ModelStateErrorsBulderAttribute.cs" />
+    <Compile Include="Infrastructure\ModelStateErrorsBuilderAttribute.cs" />
     <Compile Include="Infrastructure\NotificatorAttribute.cs" />
+    <Compile Include="IIlaroAdmin.cs" />
     <Compile Include="Logging.cs" />
+    <Compile Include="Models\ChangeRow.cs" />
+    <Compile Include="Models\EntityEditModel.cs" />
     <Compile Include="Models\Paging\IPagedList.cs" />
     <Compile Include="Models\Paging\PagedList.cs" />
     <Compile Include="Models\Paging\Pager.cs" />
@@ -278,13 +330,11 @@
     <Compile Include="Core\EntitySearch.cs" />
     <Compile Include="Filters\EnumEntityFilter.cs" />
     <Compile Include="Filters\ForeignEntityFilter.cs" />
-    <Compile Include="Fluent\EntityFluent.cs" />
     <Compile Include="Extensions\CollectionExtensions.cs" />
     <Compile Include="Extensions\ComparableExtensions.cs" />
     <Compile Include="Extensions\EnumExtensions.cs" />
     <Compile Include="Extensions\HtmlHelperExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Fluent\PropertyFluent.cs" />
     <Compile Include="Core\EntityChangeType.cs" />
     <Compile Include="Core\IEntityChange.cs" />
     <Compile Include="Models\TableInfo.cs" />
@@ -292,8 +342,16 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\Data\EntityService.cs" />
     <Compile Include="Core\Data\IEntityService.cs" />
+    <Compile Include="Registration\IRegistrationBuilder.cs" />
+    <Compile Include="Registration\RegistrationBuilder.cs" />
+    <Compile Include="Registration\ScanningRegistrationExtensions.cs" />
+    <Compile Include="IlaroAdmin.cs" />
     <Compile Include="TableInfoModelBinder.cs" />
-    <Compile Include="Templates.cs" />
+    <Compile Include="Templates.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Templates.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\CellValue.cs" />
     <Compile Include="Models\Column.cs" />
     <Compile Include="Models\DataRow.cs" />
@@ -304,7 +362,7 @@
     <Compile Include="Models\EntityDeleteModel.cs" />
     <Compile Include="Models\EntitiesChangesModel.cs" />
     <Compile Include="Models\EntitiesIndexModel.cs" />
-    <Compile Include="Models\EntityCreateOrEditModel.cs" />
+    <Compile Include="Models\EntityCreateModel.cs" />
     <Compile Include="Models\GroupModel.cs" />
     <Compile Include="Core\Entity.cs" />
     <Compile Include="Models\GroupProperties.cs" />
@@ -318,7 +376,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Create.cshtml</DependentUpon>
     </Compile>
-    <Compile Include="Areas\IlaroAdmin\Views\Entity\Delete1.generated.cs">
+    <Compile Include="Areas\IlaroAdmin\Views\Entity\Delete.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Delete.cshtml</DependentUpon>
@@ -463,7 +521,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Index.cshtml</DependentUpon>
     </Compile>
-    <Compile Include="Areas\IlaroAdmin\Views\Shared\_Layout1.generated.cs">
+    <Compile Include="Areas\IlaroAdmin\Views\Shared\_Layout.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>_Layout.cshtml</DependentUpon>
@@ -483,15 +541,18 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>_Messages.cshtml</DependentUpon>
     </Compile>
-    <Compile Include="Areas\IlaroAdmin\Views\Shared\_Paging.generated.cs">
+    <Compile Include="Areas\IlaroAdmin\Views\Entities\_Paging.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>_Paging.cshtml</DependentUpon>
     </Compile>
+    <Compile Include="Validation\PropertyModelValidatorProvider.cs" />
     <Compile Include="Validation\EntityValidator.cs" />
     <Compile Include="Validation\FileValidator.cs" />
     <Compile Include="Validation\IValidatingEntities.cs" />
     <Compile Include="Validation\IValidatingFiles.cs" />
+    <Compile Include="Validation\PropertyUnobtrusiveValidationAttributesGenerator.cs" />
+    <Compile Include="Validation\ValidationAttributeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="App_GlobalResources\IlaroAdminResources.resx">
@@ -531,6 +592,10 @@
     <EmbeddedResource Include="Content\css\bootstrap-duallistbox.min.css" />
     <EmbeddedResource Include="Scripts\ilaro.js" />
     <EmbeddedResource Include="Scripts\bootstrap.file-input.js" />
+    <Content Include="Templates.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Templates.cs</LastGenOutput>
+    </Content>
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -542,7 +607,7 @@
   <ItemGroup>
     <Content Include="Areas\IlaroAdmin\Views\Entities\Changes.cshtml">
       <Generator>RazorGenerator</Generator>
-      <LastGenOutput>Changes1.generated.cs</LastGenOutput>
+      <LastGenOutput>Changes.generated.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>
@@ -561,7 +626,7 @@
     </Content>
     <Content Include="Areas\IlaroAdmin\Views\Entity\Delete.cshtml">
       <Generator>RazorGenerator</Generator>
-      <LastGenOutput>Delete1.generated.cs</LastGenOutput>
+      <LastGenOutput>Delete.generated.cs</LastGenOutput>
     </Content>
     <Content Include="Areas\IlaroAdmin\Views\Entities\Index.cshtml">
       <Generator>RazorGenerator</Generator>
@@ -653,11 +718,11 @@
     </Content>
     <Content Include="Areas\IlaroAdmin\Views\Shared\_Layout.cshtml">
       <Generator>RazorGenerator</Generator>
-      <LastGenOutput>_Layout1.generated.cs</LastGenOutput>
+      <LastGenOutput>_Layout.generated.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Areas\IlaroAdmin\Views\Shared\_Paging.cshtml">
+    <Content Include="Areas\IlaroAdmin\Views\Entities\_Paging.cshtml">
       <Generator>RazorGenerator</Generator>
       <LastGenOutput>_Paging.generated.cs</LastGenOutput>
     </Content>
@@ -730,21 +795,44 @@
       <Generator>RazorGenerator</Generator>
       <LastGenOutput>_Filter.generated.cs</LastGenOutput>
     </Content>
-    <Content Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\_CustomDateTimeRange.cshtml">
+    <Content Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\DateTimePartial.cshtml">
       <Generator>RazorGenerator</Generator>
-      <LastGenOutput>_CustomDateTimeRange.generated.cs</LastGenOutput>
+      <LastGenOutput>DateTimePartial.generated.cs</LastGenOutput>
     </Content>
-    <Content Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\_CustomString.cshtml">
+    <Content Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\StringPartial.cshtml">
       <Generator>RazorGenerator</Generator>
-      <LastGenOutput>_CustomString.generated.cs</LastGenOutput>
+      <LastGenOutput>StringPartial.generated.cs</LastGenOutput>
     </Content>
-    <Content Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\_CustomNumber.cshtml">
+    <Content Include="Areas\IlaroAdmin\Views\Shared\FilterTemplates\NumberPartial.cshtml">
       <Generator>RazorGenerator</Generator>
-      <LastGenOutput>_CustomNumber.generated.cs</LastGenOutput>
+      <LastGenOutput>NumberPartial.generated.cs</LastGenOutput>
     </Content>
-    <None Include="Properties\PublishProfiles\IlaroAdminPublish.pubxml" />
+    <Content Include="Areas\IlaroAdmin\Views\Entity\_PropertyEditor.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>_PropertyEditor.generated.cs</LastGenOutput>
+    </Content>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Areas\IlaroAdmin\Views\Group\_LastChanges.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>_LastChanges.generated.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Areas\IlaroAdmin\Views\Entity\_PropertiesGroup.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>_PropertiesGroup.generated.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Areas\IlaroAdmin\Views\Entity\_PropertiesGroups.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>_PropertiesGroups.generated.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
@@ -759,7 +847,7 @@
     <VisualStudio>
       <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
         <WebProjectProperties>
-          <UseIIS>True</UseIIS>
+          <UseIIS>False</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>23025</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Ilaro.Admin.Core;
 using Ilaro.Admin.Core.Data;
 using Ilaro.Admin.Filters;
 using Ilaro.Admin.Tests.TestModels.Northwind;
 using Xunit;
+using Ilaro.Admin.Configuration;
 
 namespace Ilaro.Admin.Tests.Core.Data
 {
@@ -27,12 +27,10 @@ namespace Ilaro.Admin.Tests.Core.Data
             DB.Orders.Insert(ShipCity: "City3", OrderDate: "2015.06.20 11:33");
             DB.Orders.Insert(ShipCity: "City4", OrderDate: "2014.08.20 11:33");
 
-            _source = new RecordsSource(new Notificator());
-            Admin.AddEntity<Order>();
-            Admin.SetForeignKeysReferences();
-            Admin.ConnectionStringName = ConnectionStringName;
-            _entity = Admin.EntitiesTypes
-                .FirstOrDefault(x => x.Name == "Order");
+            _source = new RecordsSource(_admin, new Notificator());
+            Entity<Order>.Register().ReadAttributes();
+            _admin.Initialise(ConnectionStringName);
+            _entity = _admin.GetEntity("Order");
             _property = _entity["OrderDate"];
         }
 

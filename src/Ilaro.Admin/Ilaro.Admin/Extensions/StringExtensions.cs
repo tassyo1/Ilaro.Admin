@@ -20,6 +20,11 @@ namespace Ilaro.Admin.Extensions
             return string.IsNullOrWhiteSpace(phrase);
         }
 
+        public static bool HasValue(this string phrase)
+        {
+            return phrase.IsNullOrEmpty() == false;
+        }
+
         public static string Slug(this string phrase)
         {
             if (phrase.IsNullOrEmpty())
@@ -153,26 +158,34 @@ namespace Ilaro.Admin.Extensions
             {
                 return String.Empty;
             }
-            else
-            {
-                return value.ToString();
-            }
+            return value.ToString();
         }
 
-        public static string ToStringSafe(this object value, Property property)
+        public static string ToStringSafe(
+            this object value, 
+            Property property, 
+            string defaultFormat = "", 
+            CultureInfo culture = null)
         {
             if (value == null)
             {
                 return String.Empty;
             }
 
+            culture = culture ?? CultureInfo.InvariantCulture;
+
             if (property.TypeInfo.DataType == DataType.Numeric)
             {
                 try
                 {
-                    return Convert.ToDecimal(value).ToString(CultureInfo.InvariantCulture);
+                    return Convert.ToDecimal(value).ToString(property.Format, culture);
                 }
                 catch { }
+            }
+
+            if (property.TypeInfo.DataType == DataType.DateTime)
+            {
+                return ((DateTime)value).ToString(property.Format ?? defaultFormat, culture);
             }
 
             return value.ToString();
@@ -186,6 +199,13 @@ namespace Ilaro.Admin.Extensions
         public static string Undecorate(this string text)
         {
             return text.TrimStart('[').TrimEnd(']');
+        }
+
+        public static string GetValueOrDefault(this string text, string defaultValue)
+        {
+            return text.IsNullOrWhiteSpace() ?
+                defaultValue :
+                text;
         }
     }
 }

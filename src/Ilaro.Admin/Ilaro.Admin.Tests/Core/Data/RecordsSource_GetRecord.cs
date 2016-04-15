@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Ilaro.Admin.Core;
+﻿using Ilaro.Admin.Core;
 using Ilaro.Admin.Core.Data;
 using Ilaro.Admin.Tests.TestModels.Northwind;
 using Xunit;
@@ -13,12 +12,10 @@ namespace Ilaro.Admin.Tests.Core.Data
 
         public RecordsSource_GetRecord()
         {
-            _source = new RecordsSource(new Notificator());
-            Admin.AddEntity<Product>();
-            Admin.SetForeignKeysReferences();
-            Admin.ConnectionStringName = ConnectionStringName;
-            _entity = Admin.EntitiesTypes
-                .FirstOrDefault(x => x.Name == "Product");
+            _source = new RecordsSource(_admin, new Notificator());
+            _admin.RegisterEntity<Product>();
+            _admin.Initialise(ConnectionStringName);
+            _entity = _admin.GetEntity("Product");
         }
 
         [Fact]
@@ -29,7 +26,7 @@ namespace Ilaro.Admin.Tests.Core.Data
 
             var record = _source.GetRecord(_entity, productId);
             Assert.NotNull(record);
-            Assert.Equal("Product2", record.ProductName);
+            Assert.Equal("Product2", record["ProductName"]);
         }
 
         [Fact]

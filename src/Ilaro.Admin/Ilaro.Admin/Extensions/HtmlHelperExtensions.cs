@@ -58,10 +58,13 @@ namespace Ilaro.Admin.Extensions
             string searchQuery,
             int perPage)
         {
+            var entityName = entity == null ?
+                null :
+                entity.Name;
             var routeValues = new Dictionary<string, object>
             {
                 { "area", "IlaroAdmin" }, 
-                { "EntityName", entity.Name }, 
+                { "EntityName", entityName }, 
                 { "pp", perPage }
             };
             if (!searchQuery.IsNullOrEmpty())
@@ -135,15 +138,6 @@ namespace Ilaro.Admin.Extensions
             Func<string> trueResult)
         {
             return MvcHtmlString.Create(condition ? trueResult() : String.Empty);
-        }
-
-        /// <summary>
-        /// Clear html field prefix
-        /// </summary>
-        /// <param name="htmlHelper"></param>
-        public static void ClearPrefix(this HtmlHelper htmlHelper)
-        {
-            htmlHelper.ViewContext.ViewData.TemplateInfo.HtmlFieldPrefix = "";
         }
     }
 }

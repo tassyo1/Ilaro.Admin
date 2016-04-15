@@ -127,8 +127,14 @@
   <data name="All" xml:space="preserve">
     <value>All</value>
   </data>
+  <data name="AssumableCascadeDeleteWarning" xml:space="preserve">
+    <value>If for all foreign entities delete option is cascade delete, then all of the following records will be deleted:</value>
+  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="CascadeDeleteWarning" xml:space="preserve">
+    <value>All of the following records will be deleted:</value>
   </data>
   <data name="Change" xml:space="preserve">
     <value>Change</value>
@@ -189,6 +195,9 @@
   <data name="Index_Title" xml:space="preserve">
     <value>Admin</value>
   </data>
+  <data name="Last" xml:space="preserve">
+    <value>Last</value>
+  </data>
   <data name="LastHalfAYear" xml:space="preserve">
     <value>Last half a year</value>
   </data>
@@ -210,6 +219,9 @@
   <data name="No" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="NoChanges" xml:space="preserve">
+    <value>No changes were made.</value>
+  </data>
   <data name="OnPage" xml:space="preserve">
     <value>On page:</value>
   </data>
@@ -218,6 +230,9 @@
   </data>
   <data name="PreviousPage" xml:space="preserve">
     <value>«</value>
+  </data>
+  <data name="RecordNotValid" xml:space="preserve">
+    <value>Record is not valid. Please fix the errors.</value>
   </data>
   <data name="RemoveFilters" xml:space="preserve">
     <value>Remove filters</value>

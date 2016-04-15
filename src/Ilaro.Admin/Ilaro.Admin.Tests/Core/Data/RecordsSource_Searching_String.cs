@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using Ilaro.Admin.Configuration;
 using Ilaro.Admin.Core;
 using Ilaro.Admin.Core.Data;
 using Ilaro.Admin.Tests.TestModels.Northwind;
@@ -16,12 +16,10 @@ namespace Ilaro.Admin.Tests.Core.Data
             DB.Products.Insert(ProductName: "Test");
             DB.Products.Insert(ProductName: "Product");
 
-            _source = new RecordsSource(new Notificator());
-            Admin.AddEntity<Product>();
-            Admin.SetForeignKeysReferences();
-            Admin.ConnectionStringName = ConnectionStringName;
-            _entity = Admin.EntitiesTypes
-                .FirstOrDefault(x => x.Name == "Product");
+            _source = new RecordsSource(_admin, new Notificator());
+            Entity<Product>.Register().ReadAttributes();
+            _admin.Initialise(ConnectionStringName);
+            _entity = _admin.GetEntity("Product");
         }
 
         [Fact]

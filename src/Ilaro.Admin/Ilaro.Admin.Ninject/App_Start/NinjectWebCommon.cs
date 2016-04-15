@@ -76,7 +76,7 @@ namespace Ilaro.Admin.Ninject.App_Start
             kernel.Bind<IValidatingEntities>().To<EntityValidator>();
             kernel.Bind<IValidatingFiles>().To<FileValidator>();
             kernel.Bind<IConfigurationProvider>().To<ConfigurationProvider>();
-            kernel.Bind<IConfiguration>().To<Configuration>();
+            kernel.Bind<IConfiguration>().To<Core.Configuration>();
             kernel.Bind<IFetchingRecords>().To<RecordsSource>();
             kernel.Bind<IFetchingRecordsHierarchy>().To<RecordsHierarchySource>();
             kernel.Bind<IExecutingDbCommand>().To<DbCommandExecutor>();
@@ -92,6 +92,9 @@ namespace Ilaro.Admin.Ninject.App_Start
             kernel.Bind<IResizingImages>().To<ImageResizer>();
             kernel.Bind<ISavingFiles>().To<FileSaver>();
             kernel.Bind<IFilterFactory>().To<FilterFactory>();
+            kernel.Bind<IRecordsService>().To<RecordsService>();
+
+            kernel.Bind<IIlaroAdmin>().To<IlaroAdmin>().InSingletonScope();
         }
     }
 }

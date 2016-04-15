@@ -2,27 +2,29 @@
 using Ilaro.Admin.Core;
 using Ilaro.Admin.Filters;
 using Xunit;
+using Ilaro.Admin.Configuration;
 
 namespace Ilaro.Admin.Tests.Filters
 {
-    public class ForeignEntityFilter_
+    public class ForeignEntityFilter_ : TestBase
     {
         private ForeignEntityFilter _filter;
         private Property _property;
 
         public ForeignEntityFilter_()
         {
-            var entity = new Entity(typeof(TestEntity));
+            Entity<TestEntity>.Register().ReadAttributes();
+            _admin.Initialise();
+            var entity = _admin.GetEntity<TestEntity>();
             _property = entity["Child"];
 
             _filter = new ForeignEntityFilter(_property, "1");
         }
 
         [Fact]
-        public void generated_options_should_match()
+        public void generated_options_should_be_empty()
         {
-            var options = _filter.Options;
-            Assert.Null(_filter.Options);
+            Assert.Equal(0, _filter.Options.Count);
         }
 
         [Fact]

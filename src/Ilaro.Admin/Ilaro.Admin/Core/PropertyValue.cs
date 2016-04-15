@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
-using System.Linq;
-using Ilaro.Admin.DataAnnotations;
 using Ilaro.Admin.Extensions;
+using System.Globalization;
+using Ilaro.Admin.Core.Data;
 
 namespace Ilaro.Admin.Core
 {
@@ -12,9 +10,10 @@ namespace Ilaro.Admin.Core
     {
         private static readonly IInternalLogger _log = LoggerProvider.LoggerFor(typeof(PropertyValue));
 
+        public DataBehavior DataBehavior { get; set; }
         public object Raw { get; set; }
         public object Additional { get; set; }
-        public List<object> Values { get; set; }
+        public List<object> Values { get; set; } = new List<object>();
         public bool? AsBool
         {
             get
@@ -45,13 +44,13 @@ namespace Ilaro.Admin.Core
                     return String.Empty;
                 }
 
-                if (_typeInfo.IsNumber)
+                if (Property.TypeInfo.IsNumber)
                 {
                     try
                     {
                         return Convert
                             .ToDecimal(Raw)
-                            .ToString(CultureInfo.InvariantCulture);
+                            .ToString(CultureInfo.CurrentCulture);
                     }
                     catch (Exception ex)
                     {
@@ -66,36 +65,31 @@ namespace Ilaro.Admin.Core
         {
             get
             {
-                if (_typeInfo.IsEnum)
-                    return Convert.ChangeType(Raw, _typeInfo.EnumType);
-                if (_typeInfo.IsNullable)
-                    return Convert.ChangeType(Raw, _typeInfo.UnderlyingType);
-                if (_typeInfo.IsFile)
+                if (Property.TypeInfo.IsEnum)
+                    return Convert.ChangeType(Raw, Property.TypeInfo.EnumType, CultureInfo.CurrentCulture);
+                if (Property.TypeInfo.IsNullable)
+                    return Convert.ChangeType(Raw, Property.TypeInfo.UnderlyingType, CultureInfo.CurrentCulture);
+                if (Property.TypeInfo.IsFile)
+                    return null;
+                if (Raw == null)
                     return null;
 
-                return Convert.ChangeType(Raw, _typeInfo.Type);
+                return Convert.ChangeType(Raw, Property.TypeInfo.Type, CultureInfo.CurrentCulture);
             }
         }
 
         /// <summary>
         /// Possible values for foreign entity
         /// </summary>
-        public IDictionary<string, string> PossibleValues { get; set; }
+        public IDictionary<string, string> PossibleValues { get; set; } = new Dictionary<string, string>();
 
-        public object DefaultValue { get; private set; }
+        public string SqlParameterName { get; set; }
 
-        private readonly PropertyTypeInfo _typeInfo;
+        public Property Property { get; }
 
-        public PropertyValue(object[] attributes, PropertyTypeInfo typeInfo)
+        public PropertyValue(Property property)
         {
-            _typeInfo = typeInfo;
-            Values = new List<object>();
-
-            var defaultValueAttribute = attributes
-                .FirstOrDefault(x =>
-                    x.GetType() == typeof(DefaultValueAttribute)) as DefaultValueAttribute;
-            if (defaultValueAttribute != null)
-                DefaultValue = defaultValueAttribute.Value;
+            Property = property;
         }
 
         public object ToObject(string value)

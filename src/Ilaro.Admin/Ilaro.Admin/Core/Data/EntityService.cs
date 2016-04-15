@@ -8,6 +8,7 @@ using Ilaro.Admin.Extensions;
 using Ilaro.Admin.Models;
 using Ilaro.Admin.Validation;
 using Resources;
+using Ilaro.Admin.Core.Extensions;
 
 namespace Ilaro.Admin.Core.Data
 {
@@ -37,23 +38,23 @@ namespace Ilaro.Admin.Core.Data
             IValidatingEntities validator)
         {
             if (notificator == null)
-                throw new ArgumentNullException("notificator");
+                throw new ArgumentNullException(nameof(notificator));
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             if (creator == null)
-                throw new ArgumentNullException("creator");
+                throw new ArgumentNullException(nameof(creator));
             if (updater == null)
-                throw new ArgumentNullException("updater");
+                throw new ArgumentNullException(nameof(updater));
             if (deleter == null)
-                throw new ArgumentNullException("deleter");
+                throw new ArgumentNullException(nameof(deleter));
             if (comparer == null)
-                throw new ArgumentNullException("comparer");
+                throw new ArgumentNullException(nameof(comparer));
             if (changeDescriber == null)
-                throw new ArgumentNullException("changeDescriber");
+                throw new ArgumentNullException(nameof(changeDescriber));
             if (filesHandler == null)
-                throw new ArgumentNullException("filesHandler");
+                throw new ArgumentNullException(nameof(filesHandler));
             if (validator == null)
-                throw new ArgumentNullException("validator");
+                throw new ArgumentNullException(nameof(validator));
 
             _notificator = notificator;
             _source = source;
@@ -71,22 +72,29 @@ namespace Ilaro.Admin.Core.Data
             FormCollection collection,
             HttpFileCollectionBase files)
         {
-            entity.Fill(collection, files);
-            if (_validator.Validate(entity) == false)
+            var entityRecord = new EntityRecord(entity);
+            entityRecord.Fill(collection, files, x => x.OnCreateDefaultValue);
+            if (_validator.Validate(entityRecord) == false)
             {
-                _notificator.Error("Not valid");
+                _notificator.Error(IlaroAdminResources.RecordNotValid);
                 return null;
             }
-            var existingRecord = _source.GetRecord(entity, entity.Key.Select(x => x.Value.AsObject));
+            var existingRecord = _source.GetRecord(
+                entity,
+                entityRecord.Key.Select(value => value.AsObject).ToArray());
             if (existingRecord != null)
             {
                 _notificator.Error(IlaroAdminResources.EntityAlreadyExist);
                 return null;
             }
 
-            var propertiesWithUploadedFiles = _filesHandler.Upload(entity);
+            var propertiesWithUploadedFiles = _filesHandler.Upload(
+                entityRecord,
+                x => x.OnCreateDefaultValue);
 
-            var id = _creator.Create(entity, () => _changeDescriber.CreateChanges(entity));
+            var id = _creator.Create(
+                entityRecord,
+                () => _changeDescriber.CreateChanges(entityRecord));
 
             if (id.IsNullOrWhiteSpace() == false)
                 _filesHandler.ProcessUploaded(propertiesWithUploadedFiles);
@@ -109,18 +117,23 @@ namespace Ilaro.Admin.Core.Data
                 return false;
             }
 
-            entity.Fill(key, collection, files);
-            if (_validator.Validate(entity) == false)
+            var entityRecord = new EntityRecord(entity);
+            entityRecord.Fill(key, collection, files, x => x.OnUpdateDefaultValue);
+            if (_validator.Validate(entityRecord) == false)
             {
-                _notificator.Error("Not valid");
+                _notificator.Error(IlaroAdminResources.RecordNotValid);
                 return false;
             }
 
-            var propertiesWithUploadedFiles = _filesHandler.Upload(entity);
+            var propertiesWithUploadedFiles = _filesHandler.Upload(
+                entityRecord,
+                x => x.OnUpdateDefaultValue);
 
-            _comparer.SkipNotChangedProperties(entity, existingRecord);
+            _comparer.SkipNotChangedProperties(entityRecord, existingRecord);
 
-            var result = _updater.Update(entity, () => _changeDescriber.UpdateChanges(entity, existingRecord));
+            var result = _updater.Update(
+                entityRecord,
+                () => _changeDescriber.UpdateChanges(entityRecord, existingRecord));
 
             if (result)
                 _filesHandler.ProcessUploaded(propertiesWithUploadedFiles, existingRecord);
@@ -138,78 +151,62 @@ namespace Ilaro.Admin.Core.Data
                 _notificator.Error(IlaroAdminResources.EntityNotExist);
                 return false;
             }
+            var entityRecord = new EntityRecord(entity);
+            entityRecord.Fill(existingRecord);
 
             options = options ?? new List<PropertyDeleteOption>();
-            var deleteOptions = options.ToDictionary(x => x.PropertyName, x => x.DeleteOption);
-            foreach (var property in entity.GetForeignsForUpdate())
-            {
-                if (!deleteOptions.ContainsKey(property.ForeignEntity.Name))
-                {
-                    deleteOptions[property.ForeignEntity.Name] = property.DeleteOption;
-                }
-            }
+            var deleteOptions = options.ToDictionary(x => x.HierarchyName);
 
-            var result = _deleter.Delete(entity, deleteOptions, () => _changeDescriber.DeleteChanges(entity, existingRecord));
+            var result = _deleter.Delete(
+                entityRecord,
+                deleteOptions,
+                () => _changeDescriber.DeleteChanges(entityRecord, existingRecord));
 
             if (result)
             {
-                var propertiesWithFilesToDelete = entity
-                    .CreateProperties(getForeignCollection: false)
-                    .Where(x => x.TypeInfo.IsFile && x.TypeInfo.IsFileStoredInDb == false);
+                var propertiesWithFilesToDelete = entityRecord.Values
+                    .Where(value => value.Property.TypeInfo.IsFile && value.Property.TypeInfo.IsFileStoredInDb == false);
                 _filesHandler.Delete(propertiesWithFilesToDelete);
             }
 
             return result;
         }
 
-        public IList<GroupProperties> PrepareGroups(Entity entity, bool getKey = true, string key = null)
+        public IList<GroupProperties> PrepareGroups(
+            EntityRecord entityRecord,
+            bool getKey = true,
+            string key = null)
         {
-            var properties = entity.CreateProperties(getKey);
-            foreach (var foreign in properties.Where(x => x.IsForeignKey))
-            {
-                var records = _source.GetRecords(foreign.ForeignEntity, determineDisplayValue: true).Records;
-                foreign.Value.PossibleValues = records.ToDictionary(x => x.JoinedKeyValue, x => x.DisplayName);
-                if (foreign.TypeInfo.IsCollection)
+            var creatableProperties = entityRecord.Entity
+                .GetDefaultCreateProperties(getKey);
+
+            var groups = entityRecord.Values
+                .Where(value => creatableProperties.Contains(value.Property))
+                .GroupBy(x => x.Property.Group)
+                .Select(x => new GroupProperties
                 {
-                    foreign.Value.Values = records
-                        .Where(x => x.Values.Any(y => y.Property.ForeignEntity == entity && y.AsString == key))
+                    GroupName = x.FirstOrDefault().Property.Group,
+                    IsCollapsed = entityRecord.Entity.Groups
+                        .FirstOrDefault(y => y.GroupName == x.FirstOrDefault().Property.Group).IsCollapsed,
+                    PropertiesValues = x.ToList()
+                });
+
+            foreach (var foreignValue in groups.SelectMany(x => x.PropertiesValues)
+                .Where(x => x.Property.IsForeignKey && x.Property.ForeignEntity != null))
+            {
+                var records = _source.GetRecords(foreignValue.Property.ForeignEntity, determineDisplayValue: true).Records;
+                foreignValue.PossibleValues = records.ToDictionary(x => x.JoinedKeyValue, x => x.DisplayName);
+                if (foreignValue.Property.TypeInfo.IsCollection)
+                {
+                    foreignValue.Values = records
+                        .Where(x => x.Values.Any(y => y.Property.ForeignEntity == entityRecord.Entity && y.AsString == key))
                         .Select(x => x.JoinedKeyValue)
                         .OfType<object>()
                         .ToList();
                 }
             }
 
-            return entity.Groups;
-        }
-
-        public bool IsRecordExists(Entity entity, string key)
-        {
-            var keys = key.Split(Const.KeyColSeparator).Select(x => x.Trim()).ToArray();
-
-            return IsRecordExists(entity, keys);
-        }
-
-        private bool IsRecordExists(Entity entity, params string[] key)
-        {
-            if (key == null || key.Length == 0 || key.All(x => string.IsNullOrWhiteSpace(x)))
-            {
-                _notificator.Error(IlaroAdminResources.EntityKeyIsNull);
-                return false;
-            }
-
-            var keys = new object[key.Length];
-            for (int i = 0; i < key.Length; i++)
-            {
-                keys[i] = entity.Key[i].Value.ToObject(key[i]);
-            }
-            var existingRecord = _source.GetRecord(entity, keys);
-            if (existingRecord == null)
-            {
-                _notificator.Error(IlaroAdminResources.EntityNotExist);
-                return false;
-            }
-
-            return true;
+            return groups.ToList();
         }
     }
 }

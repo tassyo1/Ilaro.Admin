@@ -5,6 +5,7 @@ using Ilaro.Admin.Core.Data;
 using Ilaro.Admin.Filters;
 using Ilaro.Admin.Tests.TestModels.Northwind;
 using Xunit;
+using Ilaro.Admin.Configuration;
 
 namespace Ilaro.Admin.Tests.Core.Data
 {
@@ -31,11 +32,10 @@ namespace Ilaro.Admin.Tests.Core.Data
                 ChangeType = EntityChangeType.Insert
             });
 
-            _source = new RecordsSource(new Notificator());
-            Admin.AddEntity<EntityChange>();
-            Admin.SetForeignKeysReferences();
-            Admin.ConnectionStringName = ConnectionStringName;
-            _entity = Admin.ChangeEntity;
+            _source = new RecordsSource(_admin, new Notificator());
+            Entity<EntityChange>.Register().ReadAttributes();
+            _admin.Initialise(ConnectionStringName);
+            _entity = _admin.ChangeEntity;
             _property = _entity["EntityName"];
         }
 
